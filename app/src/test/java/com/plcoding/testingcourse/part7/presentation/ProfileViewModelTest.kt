@@ -4,8 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isNull
+import com.plcoding.testingcourse.core.domain.MainCoroutineExtension
 import com.plcoding.testingcourse.part7.data.UserRepositoryFake
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -15,7 +18,11 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import java.lang.Exception
 
+@OptIn(ExperimentalCoroutinesApi::class)
+@ExtendWith(MainCoroutineExtension::class)
 class ProfileViewModelTest {
 
     private lateinit var viewModel: ProfileViewModel
@@ -23,10 +30,6 @@ class ProfileViewModelTest {
 
     @BeforeEach
     fun setUp() {
-        //switch to test thread
-        val testDispatcher = StandardTestDispatcher()
-        Dispatchers.setMain(testDispatcher)
-
         repository = UserRepositoryFake()
         viewModel = ProfileViewModel(
             repository = repository,
@@ -38,11 +41,6 @@ class ProfileViewModelTest {
         )
     }
 
-    @AfterEach
-    fun tearDown() {
-        //reset thread back after testing
-        Dispatchers.resetMain()
-    }
 
     @Test
     fun `Test loading profile success`() = runTest {
@@ -53,6 +51,20 @@ class ProfileViewModelTest {
 
         assertThat(viewModel.state.value.profile).isEqualTo(repository.profileToReturn)
         assertThat(viewModel.state.value.isLoading).isFalse()
+    }
+
+    @Test
+    fun `Test loading profile error`() = runTest {
+        repository.errorToReturn = Exception("Test exception")
+
+        viewModel.loadProfile()
+
+        advanceUntilIdle()
+
+        assertThat(viewModel.state.value.profile).isNull()
+        assertThat(viewModel.state.value.errorMessage).isEqualTo("Test exception")
+        assertThat(viewModel.state.value.isLoading).isFalse()
+
     }
 
 }
