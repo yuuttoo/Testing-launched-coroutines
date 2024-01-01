@@ -1,10 +1,12 @@
 package com.plcoding.testingcourse.part7.presentation
 
 import androidx.lifecycle.SavedStateHandle
+import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import com.plcoding.testingcourse.core.domain.MainCoroutineExtension
 import com.plcoding.testingcourse.part7.data.UserRepositoryFake
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +67,22 @@ class ProfileViewModelTest {
         assertThat(viewModel.state.value.errorMessage).isEqualTo("Test exception")
         assertThat(viewModel.state.value.isLoading).isFalse()
 
+    }
+
+    @Test
+    fun  `Test loading state updates`()= runTest {
+        viewModel.state.test {
+            val emission1 = awaitItem()//before loadProfile
+            assertThat(emission1.isLoading).isFalse()
+
+            viewModel.loadProfile()
+
+            val emission2 = awaitItem()//start loadingProfile
+            assertThat(emission2.isLoading).isTrue()
+
+            val emission3 = awaitItem()
+            assertThat(emission3.isLoading).isFalse()
+        }
     }
 
 }
